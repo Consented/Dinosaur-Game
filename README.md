@@ -1,6 +1,6 @@
 # Game
 
-File structure is:
+File structure is: (just a starting point you can change it if you want idm)
 
 main - stores code
 main/data - stores all assets
