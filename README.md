@@ -12,3 +12,5 @@ main/data/images/sprites - stores character sprites/images
   
 The empty text files are just placeholders to make github accept the folders  
 
+Test Level - Contains all assets to make a practice level :3
+
