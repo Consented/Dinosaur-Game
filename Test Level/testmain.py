@@ -9,7 +9,7 @@ pygame.init()
 
 WINDOW_SIZE = (1200,600)
 SCREEN = pygame.display.set_mode(WINDOW_SIZE)
-WINDOW = pygame.Surface((1600,800))
+WINDOW = pygame.Surface((1200,600))
 
 CLOCK = pygame.time.Clock()
 
@@ -23,11 +23,13 @@ moving_right = False
 moving_left = False
 moving_up = False
 moving_down = False
+player_y_momentum = 0
+air_timer = 0
 ###Rects
 l1rect1 = pygame.image.load("collision_rectangles/l1rect1.png")
 l1rect1_rect =l1rect1.get_rect(topleft=(-300,340))
 l1rect2 = pygame.image.load("collision_rectangles/l1rect2.png")
-l1rect2_rect = l1rect2.get_rect(topleft=(505,340))
+l1rect2_rect = l1rect2.get_rect(topleft=(500,340))
 l1rect3_rect = l1rect1.get_rect(topleft=(505,940))
 
 
@@ -50,7 +52,13 @@ bg6 = pygame.image.load("Test Background Assets/Test-Game_0010_background-color.
 
 ###Player
 player_img = pygame.image.load("playerplaceholder.png").convert_alpha()
+player_idle = pygame.image.load("playeridle.png").convert_alpha()
+player_falling = pygame.image.load("playerfalling.png").convert_alpha()
+
+player_imgs = [player_img, player_idle, player_falling]
 player_rect = player_img.get_rect(center = (0,300)) #Draws rectangle around the player_img and places the centre of the rectangle at (0, 300)
+pstate = 0
+idlecount = 0
 
 debug = True
 
@@ -90,14 +98,26 @@ def collision_test(rect, tiles):
 
 def scrollfunc(scroll):
     scroll[0] += (player_rect.x - scroll[0]- 200) /20
-    scroll[1] += (player_rect.y - scroll[1]- 100) /20
+    scroll[1] += (player_rect.y - scroll[1]- 400) /20
     return scroll
+
+def player_state():
+    global idlecount
+    global pstate
+    global airtime
+    if not moving_right and not moving_left and air_timer < 2:
+        idlecount += 1
+    else:
+        idlecount = 0
+    if idlecount > 100:
+        pstate = 1
+    elif player_y_momentum > 0 and not collisions["bottom"] and air_timer > 2:
+        pstate = 2
+    else:
+        pstate = 0
 
 #   #   #Main loop
 #Rect(0,340,550,20)
-
-
-
 
 while True:
     for event in pygame.event.get():
@@ -110,6 +130,8 @@ while True:
             if event.key == K_LEFT:
                 moving_left = True
             if event.key == K_UP:
+                if air_timer < 6: #Allows the player to jump 6 frames after not touching ground
+                    player_y_momentum -= 15
                 moving_up = True
             if event.key == K_DOWN:
                 moving_down = True
@@ -130,18 +152,32 @@ while True:
         player_movement[0] += 10
     if moving_left:
         player_movement[0] -= 10
-    if moving_down:
-        player_movement[1] += 10
-    if moving_up:
-        player_movement[1] -= 10
+    # if moving_down:
+    #     player_movement[1] += 10
+    # if moving_up:
+    #     player_movement[1] -= 10
+
+    player_movement[1] += player_y_momentum # Change player y by y-momentum
+    player_y_momentum += 1 # increase y-momentum (gravity)
+
+    if player_y_momentum > 10: # Caps gravity at 10
+        player_y_momentum = 10
 
 
     player_rect, collisions = move(player_rect, player_movement, level_rects)
 
 
+    if collisions["bottom"]: #If the bottom of the player is coliding with tiles
+        player_y_momentum = 0
+        air_timer = 0
+    else: # If the bottom of the player is not colliding with the tiles
+        air_timer += 1
 
+    if collisions["top"]:
+        player_y_momentum += 1.2
 
     scroll = scrollfunc(scroll)
+    player_state()
 
 
 
@@ -154,7 +190,7 @@ while True:
     WINDOW.blit(bg2, (0-scroll[0]*0.75,300-scroll[1]))
     WINDOW.blit(bg1InsideGround, (0-scroll[0],300-scroll[1]))
     WINDOW.blit(bg1Water, (0-scroll[0],300-scroll[1]))
-    WINDOW.blit(player_img, (player_rect.x - scroll[0], player_rect.y - scroll[1]))
+    WINDOW.blit(player_imgs[pstate], (player_rect.x - scroll[0], player_rect.y - scroll[1]))
     WINDOW.blit(bg1Walk, (0-scroll[0],300-scroll[1]))
 
 
